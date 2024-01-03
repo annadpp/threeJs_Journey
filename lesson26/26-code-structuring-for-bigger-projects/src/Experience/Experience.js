@@ -6,6 +6,7 @@ import Camera from "./Camera";
 import Renderer from "./Renderer";
 import World from "./World/World";
 import Resources from "./Utils/Resources";
+import Debug from "./Utils/Debug";
 
 import sources from "./sources";
 
@@ -26,6 +27,8 @@ export default class Experience {
     this.canvas = canvas;
 
     //Setup
+    this.debug = new Debug();
+
     this.sizes = new Sizes();
     this.time = new Time();
     this.scene = new THREE.Scene();
@@ -54,6 +57,39 @@ export default class Experience {
   //updates frames on tick -> for animations
   update() {
     this.camera.update();
+    this.world.update();
     this.renderer.update();
+  }
+
+  //destroys all content -> useful when working on a website or a browser game
+  destroy() {
+    this.sizes.off("resize");
+    this.time.off("tick");
+
+    // Traverse the whole scene
+    this.scene.traverse((child) => {
+      // Test if it's a mesh
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+
+        // Loop through the material properties
+        for (const key in child.material) {
+          const value = child.material[key];
+
+          // Test if there is a dispose function
+          if (value && typeof value.dispose === "function") {
+            value.dispose();
+          }
+        }
+      }
+    });
+
+    this.camera.controls.dispose();
+    this.renderer.instance.dispose();
+
+    //dispose of debug
+    if (this.debug.active) {
+      this.debug.ui.destroy();
+    }
   }
 }
